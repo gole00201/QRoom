@@ -163,8 +163,10 @@ Adafruit_NeoPixel STRIP = Adafruit_NeoPixel(COUNT_PIXEL, PIN_LED_PODSTAVKA, NEO_
 /*
     ? Deprecated
 */
-void SEND_COMMAND(int Whom, int Command, int Int) {
-    struct cmd {
+void SEND_COMMAND(int Whom, int Command, int Int)
+{
+    struct cmd
+    {
         int Command;
         int Int = 0;
     } CMD; // Команда сервера
@@ -177,7 +179,8 @@ void SEND_COMMAND(int Whom, int Command, int Int) {
 /*
     ? 485
 */
-void PRINT(String Str){
+void PRINT(String Str)
+{
     digitalWrite(PIN_RS485_CONTROL, HIGH);
     // delay(100);
     // Serial.print(Str);
@@ -186,7 +189,8 @@ void PRINT(String Str){
     // delay(500);
 }
 
-void SET_RGB(int i, int R, int G, int B){
+void SET_RGB(int i, int R, int G, int B)
+{
     STRIP.setPixelColor(i, STRIP.Color(B, R, G));
 }
 
@@ -203,14 +207,16 @@ void SET_RGB(int i, int R, int G, int B){
     }
 */
 
-bool CHECK_ERROR_SYMBOL(String Str){
+bool CHECK_ERROR_SYMBOL(String Str)
+{
     for (int i = 0; i < Str.length(); i++)
         if (int(Str[i]) > 255 or int(Str[i]) < 0)
             return true;
     return false;
 }
 
-void PRINT_RFID_HEX(OneWire &RFID){
+void PRINT_RFID_HEX(OneWire &RFID)
+{
     String Str = "";
     bool TR_Error = false;
 
@@ -463,10 +469,13 @@ void loop()
         if (Count != 0 and millis() - TM_Rot_Start > 5000)
         {
             TM_Rot_Start = millis();
-            if (Count > 4) {
+            if (Count > 4)
+            {
                 TR_Din_Machine_On = true;
                 Count = 0;
-            } else {
+            }
+            else
+            {
                 Count = 0;
             }
         }
@@ -491,7 +500,8 @@ void loop()
     // Дверь в гробницу
     if (TR_Door_Tomb_On)
     {
-        if (!digitalRead(PIN_MOTOR_DOOR_TOMB_OPEN) and !digitalRead(PIN_GERKON_DOOR_TOMB_OPEN)){
+        if (!digitalRead(PIN_MOTOR_DOOR_TOMB_OPEN) and !digitalRead(PIN_GERKON_DOOR_TOMB_OPEN))
+        {
             digitalWrite(PIN_MOTOR_DOOR_TOMB_OPEN, HIGH);
             TR_Door_Tomb_On = false;
         }
@@ -573,10 +583,9 @@ void loop()
         }
     }
 
-
-/*
-    ? Цикл опроса 500мс ?
-*/
+    /*
+        ? Цикл опроса 500мс ?
+    */
     // Сообщения
     if (millis() - TM_Status_Message > 500)
     {
@@ -843,24 +852,24 @@ void loop()
             else if (command == "ld_pddk")
             {
 
-/*
-                ? Так будет быстрее
+                /*
+                                ? Так будет быстрее
 
-                 switch ((char) commandValue.c_str())
-                {
-                case 'R':
-                    break;
-                case 'G':
-                    break;
-                case 'B':
-                    break;
-                case '0':
-                    break;
-                default:
-                    break;
-                }
+                                 switch ((char) commandValue.c_str())
+                                {
+                                case 'R':
+                                    break;
+                                case 'G':
+                                    break;
+                                case 'B':
+                                    break;
+                                case '0':
+                                    break;
+                                default:
+                                    break;
+                                }
 
- */
+                 */
 
                 /*
                 if      (String(commandValue.c_str())==String("R")) { digitalWrite(PIN_LED_PODSTAVKA_R, HIGH); digitalWrite(PIN_LED_PODSTAVKA_G, LOW); digitalWrite(PIN_LED_PODSTAVKA_B, LOW); }
