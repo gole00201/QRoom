@@ -1,0 +1,17 @@
+{
+    "gameStates": [
+    {
+      "stateID": 1,
+      "description": "State_1",
+      "outs": "test_led",
+      "requiredExpr": "(Gerkon_1 and (AnalogSensor_1 >= 255))",
+      "nextStateID": 2
+    },
+    {
+      "stateID": 2,
+      "description": "State_2",
+      "requiredExpr": "(DoorRelay == LOW and ServoMotor >= 50)",
+      "nextStateID": 3
+    }
+  ]
+}
