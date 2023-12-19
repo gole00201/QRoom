@@ -18,11 +18,11 @@ void cfg_pin(BOARD_STATE_t* cntx, uint16_t pin_cfg, bool analog){
     if(analog){
         return;
     } else {
-        uint8_t pin_n     = (pin_cfg >> 8) & 0XFF;
-        uint8_t mode      = (pin_cfg & 0x01) >> 1;
-        uint8_t def_state = (pin_cfg & 0x02) >> 2;
+        uint8_t pin_n     = (pin_cfg >> 8) & 0xFF;
+        uint8_t mode      = (pin_cfg & 0x1) >> 0;
+        uint8_t def_state = (pin_cfg & 0x2) >> 1;
         pinMode(pin_n, mode);
-        digitalWrite(pin_n, def_state);
+        digitalWrite(pin_n, 0);
     }
 }
 
@@ -35,8 +35,8 @@ uint8_t brd_analize_cfg(CFG_MSG_t* data, BOARD_STATE_t* cntx){
     if(data->start_f != MSG_START){
         return 0x01; /* СДЕЛАТЬ ENUM C ОШИБКАМИ */
     }
-    if(data->pins_cnt != d_PINS_CNT + a_PINS_CNT){
-        return 0x02; /* СДЕЛАТЬ ENUM C ОШИБКАМИ */
+    for(size_t i = 0; i < d_PINS_CNT; ++i){
+        cfg_pin(cntx, data->d_pins_cfg[i], false);
     }
     return 0x00;
 }
@@ -57,5 +57,5 @@ void loop()
     cntx.addres = 0xFF; /* Чтение адреса?*/
     CFG_MSG_t brd_cfg = {0};
 	rs_receive_cfg(&brd_cfg);
-    Serial.write(brd_analize_cfg(&brd_cfg, &cntx));
+    brd_analize_cfg(&brd_cfg, &cntx);
 }

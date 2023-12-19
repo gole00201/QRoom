@@ -8,9 +8,7 @@ typedef void (*function_ptr)(int);
 typedef struct CFG_MSG_t
 {
     uint8_t start_f;
-    uint8_t pins_cnt;
     uint16_t d_pins_cfg[d_PINS_CNT];
-    uint16_t a_pins_cfg[a_PINS_CNT];
     uint16_t crc_f;
 } CFG_MSG_t;
 
