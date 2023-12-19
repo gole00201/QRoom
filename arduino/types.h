@@ -33,15 +33,14 @@ typedef struct PIN_CFG_t {
 typedef struct BOARD_STATE_t
 {
     uint8_t addres;
-    uint32_t pins_data[d_PINS_CNT];
 } BOARD_STATE_t;
 
 void rs_receive_cfg(CFG_MSG_t* data);
-uint8_t brd_analize_cfg(CFG_MSG_t* data);
+uint8_t brd_analize_cfg(CFG_MSG_t* data, BOARD_STATE_t* cntx);
 
 void rs_receive_msg(MSG_t* data);
 void brd_analize_msg(MSG_t* data);
 
 void rs_send_msg(MSG_t* data);
 
-void cfg_pin(BOARD_STATE_t* cntx, uint16_t pin_cfg, uint8_t pin_n);
+void cfg_pin(BOARD_STATE_t* cntx, uint16_t pin_cfg, bool analog);
