@@ -4,7 +4,6 @@
 
 typedef void (*function_ptr)(int);
 
-#pragma pack(1)
 typedef struct CFG_MSG_t
 {
     uint8_t start_f;
@@ -19,7 +18,6 @@ typedef struct MSG_t
     uint8_t data;
     uint16_t crc;
 } MSG_t;
-#pragma pack()
 
 typedef struct PIN_CFG_t {
     uint8_t pin_num;

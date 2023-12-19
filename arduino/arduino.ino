@@ -15,14 +15,15 @@ void rs_send_msg(MSG_t* data){
 }
 
 void cfg_pin(BOARD_STATE_t* cntx, uint16_t pin_cfg, bool analog){
+    uint8_t *cfg = (uint8_t*) &pin_cfg;
     if(analog){
         return;
     } else {
-        uint8_t pin_n     = (pin_cfg >> 8) & 0xFF;
-        uint8_t mode      = (pin_cfg & 0x1) >> 0;
-        uint8_t def_state = (pin_cfg & 0x2) >> 1;
+        uint8_t pin_n     = cfg[0];
+        uint8_t mode      = (cfg[1] & 0x1) >> 0;
+        uint8_t def_state = (cfg[1] & 0x2) >> 1;
         pinMode(pin_n, mode);
-        digitalWrite(pin_n, 0);
+        digitalWrite(pin_n, def_state);
     }
 }
 
