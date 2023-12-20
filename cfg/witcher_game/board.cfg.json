@@ -1,0 +1,15 @@
+{
+    "boards": [
+      {
+        "boardType": "Arduino UNO",
+        "boardID": 1,
+        "pins": [
+          {
+            "pinID": "d13",
+            "pinType": "imp",
+            "pinFunction": "test_led"
+          }
+        ]
+      }
+    ]
+}
