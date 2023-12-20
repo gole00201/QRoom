@@ -1,62 +1,76 @@
 #include "types.h"
 
-void rs_receive_cfg(CFG_MSG_t* data){
-    while (Serial.available() < sizeof(CFG_MSG_t)){}
-    Serial.readBytes((char*)data, sizeof(CFG_MSG_t));
+void rs_get_cfg(CFG_PACK* cfgPack){
+    while (Serial.available() < 1) {}
+    cfgPack->st_f = Serial.read();
+
+    while (Serial.available() < 1) {}
+    cfgPack->pin_cnt = Serial.read();
+
+    cfgPack->pins_cfg = new CFG_PIN_MSG[cfgPack->pin_cnt];
+
+    while (Serial.available() < cfgPack->pin_cnt * sizeof(CFG_PIN_MSG)) {}
+    Serial.readBytes((uint8_t *)cfgPack->pins_cfg,
+                     cfgPack->pin_cnt * sizeof(CFG_PIN_MSG));
+
+    while (Serial.available() < sizeof(uint16_t)) {}
+    Serial.readBytes((uint8_t *)&cfgPack->crc,
+                     sizeof(uint16_t));
+
+    while (Serial.available() < 1) {}
+    cfgPack->en_f = Serial.read();
 }
 
-void rs_receive_msg(MSG_t* data){
-    while (Serial.available() < sizeof(MSG_t)){}
-    Serial.readBytes((char*)data, sizeof(MSG_t));
-}
-
-void rs_send_msg(MSG_t* data){
-    Serial.write((uint8_t*)data, sizeof(MSG_t));
-}
-
-void cfg_pin(BOARD_STATE_t* cntx, uint16_t pin_cfg, bool analog){
-    uint8_t *cfg = (uint8_t*) &pin_cfg;
-    if(analog){
-        return;
-    } else {
-        uint8_t pin_n     = cfg[0];
-        uint8_t mode      = (cfg[1] & 0x1) >> 0;
-        uint8_t def_state = (cfg[1] & 0x2) >> 1;
-        pinMode(pin_n, mode);
-        digitalWrite(pin_n, def_state);
+void brd_cfg_pin(CFG_PIN_MSG cfg, BRD_STATE* brd, size_t i){
+    brd->pins[i].cfg = cfg;
+    PIN_STATE *pin = &brd->pins[i];
+    if(pin->cfg.pin_t == 0x0D){
+        /* Цифровой */
+        if(pin->cfg.pin_mode == 0xFF){
+            pinMode(pin->cfg.pin_n, OUTPUT);
+            pin->action = digitalWrite;
+            pin->val = 0;
+        }
+    }
+    if(pin->cfg.pin_t == 0x0A){
+        /* Аналоговый */
+        if(pin->cfg.pin_mode == 0xFF){
+            /* analogWrite()*/
+        }
     }
 }
 
-uint8_t brd_analize_cfg(CFG_MSG_t* data, BOARD_STATE_t* cntx){
-    if(data->crc_f){
-        /*
-        TODO
-        */
+uint8_t brd_parse_cfg(CFG_PACK cfg, BRD_STATE* brd){
+    if (cfg.st_f != ST_F){
+        return 0x01;
     }
-    if(data->start_f != MSG_START){
-        return 0x01; /* СДЕЛАТЬ ENUM C ОШИБКАМИ */
+    if (cfg.en_f != EN_F){
+        return 0x02;
     }
-    for(size_t i = 0; i < d_PINS_CNT; ++i){
-        cfg_pin(cntx, data->d_pins_cfg[i], false);
+    brd->pins_cnt = cfg.pin_cnt;
+    brd->pins = new PIN_STATE[brd->pins_cnt];
+    for (size_t i = 0; i < cfg.pin_cnt; ++i){
+        brd_cfg_pin(cfg.pins_cfg[i], brd, i);
     }
     return 0x00;
 }
-void brd_analize_msg(MSG_t* data){
-    /*
-    TODO
-    */
+
+void setup(){
+    Serial.begin(9600);
 }
 
-void setup()
-{
-	Serial.begin(9600);
-}
-
-void loop()
-{
-    BOARD_STATE_t cntx;
-    cntx.addres = 0xFF; /* Чтение адреса?*/
-    CFG_MSG_t brd_cfg = {0};
-	rs_receive_cfg(&brd_cfg);
-    brd_analize_cfg(&brd_cfg, &cntx);
+void loop(){
+    CFG_PACK cfg;
+    BRD_STATE cntx;
+    do{
+        rs_get_cfg(&cfg);
+    } while(brd_parse_cfg(cfg, &cntx));
+    while (1)
+    {
+        for (size_t i = 0; i < cntx.pins_cnt; ++i){
+            PIN_STATE pin = cntx.pins[i];
+            pin.action(pin.cfg.pin_n, pin.val);
+        }
+        delay(500);
+    }
 }

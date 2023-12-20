@@ -1,42 +1,37 @@
-#define d_PINS_CNT 13
-#define a_PINS_CNT 5
-#define MSG_START 0xFA
+#define ST_F 0xFA
+#define EN_F 0xAF
 
-typedef void (*function_ptr)(int);
+typedef void (*FP)(uint8_t, uint8_t);
 
-typedef struct CFG_MSG_t
-{
-    uint8_t start_f;
-    uint16_t d_pins_cfg[d_PINS_CNT];
-    uint16_t crc_f;
-} CFG_MSG_t;
+typedef struct CFG_PIN_MSG{
+    uint8_t pin_n;
+    uint8_t pin_t;
+    uint8_t pin_mode;
+}CFG_PIN_MSG;
 
-typedef struct MSG_t
-{
-    uint8_t start_f;
-    uint8_t pin_n[d_PINS_CNT];
-    uint8_t data;
+typedef struct CFG_PACK{
+    uint8_t st_f;
+    uint8_t pin_cnt;
+    CFG_PIN_MSG *pins_cfg;
     uint16_t crc;
-} MSG_t;
+    uint8_t en_f;
+}CFG_PACK;
 
-typedef struct PIN_CFG_t {
-    uint8_t pin_num;
-    uint8_t pin_type;
-    function_ptr f;
-    uint32_t pins_data;
-} PIN_CFG_t;
+typedef struct PIN_STATE{
+    CFG_PIN_MSG cfg;
+    FP action;
+    uint16_t val;
+}PIN_STATE;
 
-typedef struct BOARD_STATE_t
-{
-    uint8_t addres;
-} BOARD_STATE_t;
+typedef struct BRD_STATE{
+    uint8_t addr;
+    uint8_t pins_cnt;
+    PIN_STATE* pins;
+}BRD_STATE;
 
-void rs_receive_cfg(CFG_MSG_t* data);
-uint8_t brd_analize_cfg(CFG_MSG_t* data, BOARD_STATE_t* cntx);
 
-void rs_receive_msg(MSG_t* data);
-void brd_analize_msg(MSG_t* data);
+void rs_get_cfg(CFG_PACK* cfg);
 
-void rs_send_msg(MSG_t* data);
+uint8_t brd_parse_cfg(CFG_PACK cfg, BRD_STATE* brd);
 
-void cfg_pin(BOARD_STATE_t* cntx, uint16_t pin_cfg, bool analog);
+void brd_cfg_pin(CFG_PIN_MSG cfg, BRD_STATE* brd, size_t i);
