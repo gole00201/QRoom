@@ -1,5 +1,7 @@
 #define ST_F 0xFA
 #define EN_F 0xAF
+#include <stdint.h>
+#include <Arduino.h>
 
 typedef void (*FP)(uint8_t, uint8_t);
 
