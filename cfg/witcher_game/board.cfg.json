@@ -5,9 +5,10 @@
         "boardID": 1,
         "pins": [
           {
-            "pinID": "d13",
-            "pinType": "imp",
-            "pinFunction": "test_led"
+            "pinID": "13",
+            "pinType": "digital",
+            "pinMode" : "write",
+            "pinName": "test_led"
           }
         ]
       }

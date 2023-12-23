@@ -6,7 +6,6 @@ void rs_get_cfg(CFG_PACK* cfgPack){
 
     while (Serial.available() < 1) {}
     cfgPack->pin_cnt = Serial.read();
-
     cfgPack->pins_cfg = new CFG_PIN_MSG[cfgPack->pin_cnt];
 
     while (Serial.available() < cfgPack->pin_cnt * sizeof(CFG_PIN_MSG)) {}
