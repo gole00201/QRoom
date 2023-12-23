@@ -26,6 +26,7 @@ void brd_cfg_pin(CFG_PIN_MSG cfg, BRD_STATE* brd, size_t i){
     if(pin->cfg.pin_t == 0x0D){
         /* Цифровой */
         if(pin->cfg.pin_mode == 0xFF){
+            /*Тестовая конфигурация, нужна таблица*/
             pinMode(pin->cfg.pin_n, OUTPUT);
             pin->action = digitalWrite;
             pin->val = 0;
@@ -35,6 +36,7 @@ void brd_cfg_pin(CFG_PIN_MSG cfg, BRD_STATE* brd, size_t i){
         /* Аналоговый */
         if(pin->cfg.pin_mode == 0xFF){
             /* analogWrite()*/
+            /* Указатель на юнион с типами?*/
         }
     }
 }
