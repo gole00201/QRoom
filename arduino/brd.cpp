@@ -82,7 +82,11 @@ void rs_send_state(BRD_STATE cntx){
 }
 
 int digital_write_action(uint8_t pin_n, int data){
-    digitalWrite(pin_n, (uint8_t)data);
+    if(data > 0){
+        digitalWrite(pin_n, HIGH);
+    } else{
+        digitalWrite(pin_n, LOW);
+    }
     return data;
 }
 
@@ -97,4 +101,8 @@ int analog_read_action(uint8_t pin_n, int data){
 int abalog_write_action(uint8_t pin_n, int data){
     analogWrite(pin_n, data);
     return data;
+}
+
+void rs_get_check_msg(CHANGE_MSG* data){
+    Serial.readBytesUntil(0xaf, (uint8_t *)data, sizeof(CHANGE_MSG));
 }

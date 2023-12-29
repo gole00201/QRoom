@@ -37,6 +37,16 @@ typedef struct BRD_STATE{
     PIN_STATE* pins;
 }BRD_STATE;
 
+typedef struct CHANGE_MSG
+{
+    uint8_t st_f;
+    uint8_t addr;
+    uint8_t pin_n;
+    uint16_t write;
+    uint8_t en_f;
+};
+
+
 void rs_send_state(BRD_STATE);
 
 /**
@@ -72,3 +82,5 @@ int digital_read_action(uint8_t pin_n, int data);
 int analog_read_action(uint8_t pin_n, int data);
 
 int abalog_write_action(uint8_t pin_n, int data);
+
+void rs_get_check_msg(CHANGE_MSG*);

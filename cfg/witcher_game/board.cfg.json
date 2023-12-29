@@ -11,7 +11,7 @@
             "pinName": "test_led"
           },
           {
-            "pinID": "2",
+            "pinID": "10",
             "pinType": "digital",
             "pinMode": "write",
             "pinName": "rel_1"
@@ -30,5 +30,21 @@
           }
         ]
       }
+    ],
+    "stages":[
+        {
+            "name": "stage_1",
+            "brd": "1",
+            "in": ["(not rel_1)", "(not test_led"],
+            "exp": ["(gerkon_1)"],
+            "out": ["rel_1"]
+        },
+        {
+            "name": "stage_2",
+            "brd": "1",
+            "in": ["(not test_led"],
+            "exp": ["(gerkon_2)"],
+            "out": ["test_led"]
+        }
     ]
 }
