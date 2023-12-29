@@ -7,19 +7,15 @@ void setup(){
 void loop(){
     CFG_PACK cfg;
     BRD_STATE cntx;
+    CHANGE_MSG msg = {0};
     do{
         rs_get_cfg(&cfg);
     } while(brd_parse_cfg(cfg, &cntx));
     while (1)
     {
         if (Serial.available()){
-            CHANGE_MSG msg = {0};
             rs_get_check_msg(&msg);
-            for(size_t i = 0; i < cntx.pins_cnt; ++i){
-                if(cntx.pins[i].cfg.pin_n == msg.pin_n){
-                    cntx.pins[i].write = msg.write;
-                }
-            }
+            brd_change_outs(msg, &cntx);
         }
         for (size_t i = 0; i < cntx.pins_cnt; ++i){
             PIN_STATE pin = cntx.pins[i];

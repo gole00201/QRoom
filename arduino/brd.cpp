@@ -26,7 +26,7 @@ void brd_cfg_pin(CFG_PIN_MSG cfg, BRD_STATE* brd, size_t i){
     brd->pins[i].cfg = cfg;
     PIN_STATE *pin = &brd->pins[i];
     if(pin->cfg.pin_t == 0x0D){
-        /* Цифровой */
+        /* Цифровой 1/0*/
         if(pin->cfg.pin_mode == 0xFF){
             /*Тестовая конфигурация, нужна таблица*/
             pinMode(pin->cfg.pin_n, OUTPUT);
@@ -38,12 +38,17 @@ void brd_cfg_pin(CFG_PIN_MSG cfg, BRD_STATE* brd, size_t i){
             pin->action = digital_read_action;
             pin->write = 0;
         }
+        if(pin->cfg.pin_mode == 0xF0){
+            pin->action = analog_write_action;
+            pin->write = 0;
+        }
     }
     if(pin->cfg.pin_t == 0x0A){
         /* Аналоговый */
-        if(pin->cfg.pin_mode == 0xFF){
-            /* analogWrite()*/
-            /* Указатель на юнион с типами?*/
+        if(pin->cfg.pin_mode == 0xAA){
+           pinMode(pin->cfg.pin_n, INPUT);
+           pin->action = analog_read_action;
+           pin->write = 0;
         }
     }
 }
@@ -73,15 +78,17 @@ void rs_send_state(BRD_STATE cntx){
     Serial.write(cntx.pins_cnt);
     for(size_t i = 0; i < cntx.pins_cnt; ++i){
         Serial.write(cntx.pins[i].cfg.pin_n);
-        Serial.write(cntx.pins[i].read);
-        Serial.write(cntx.pins[i].write);
+        Serial.write((cntx.pins[i].read >> 8) & 0xFF);
+        Serial.write(cntx.pins[i].read & 0xFF);
+        Serial.write((cntx.pins[i].write >> 8) & 0xFF);
+        Serial.write(cntx.pins[i].write & 0xFF);
     }
     Serial.write(0xFF); // CRC - 16
     Serial.write(0xFF);
     Serial.write(EN_F);
 }
 
-int digital_write_action(uint8_t pin_n, int data){
+uint16_t digital_write_action(uint8_t pin_n, uint16_t data){
     if(data > 0){
         digitalWrite(pin_n, HIGH);
     } else{
@@ -90,19 +97,27 @@ int digital_write_action(uint8_t pin_n, int data){
     return data;
 }
 
-int digital_read_action(uint8_t pin_n, int data){
+uint16_t digital_read_action(uint8_t pin_n, uint16_t data){
     return digitalRead(pin_n);
 }
 
-int analog_read_action(uint8_t pin_n, int data){
+uint16_t analog_read_action(uint8_t pin_n, uint16_t data){
     return analogRead(pin_n);
 }
 
-int abalog_write_action(uint8_t pin_n, int data){
+uint16_t analog_write_action(uint8_t pin_n, uint16_t data){
     analogWrite(pin_n, data);
     return data;
 }
 
 void rs_get_check_msg(CHANGE_MSG* data){
     Serial.readBytesUntil(0xaf, (uint8_t *)data, sizeof(CHANGE_MSG));
+}
+
+void brd_change_outs(CHANGE_MSG data, BRD_STATE* cntx){
+    for (size_t i = 0; i < cntx->pins_cnt; ++i){
+        if (cntx->pins[i].cfg.pin_n == data.pin_n){
+            cntx->pins[i].write = data.write;
+        }
+    }
 }

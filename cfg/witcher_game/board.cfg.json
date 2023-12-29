@@ -5,28 +5,46 @@
         "boardID": 1,
         "pins": [
           {
-            "pinID": "13",
             "pinType": "digital",
+            "pinID": "13",
             "pinMode" : "write",
             "pinName": "test_led"
           },
           {
-            "pinID": "10",
             "pinType": "digital",
+            "pinID": "10",
             "pinMode": "write",
             "pinName": "rel_1"
           },
           {
-            "pinID": "3",
             "pinType": "digital",
+            "pinID": "3",
             "pinMode": "read",
             "pinName": "gerkon_1"
           },
           {
-            "pinID": "4",
             "pinType": "digital",
+            "pinID": "4",
             "pinMode": "read",
             "pinName": "gerkon_2"
+          },
+          {
+            "pinType": "digital",
+            "pinID": "7",
+            "pinMode": "write",
+            "pinName": "rel_2"
+          },
+          {
+            "pinType": "digital",
+            "pinID": "11",
+            "pinMode": "pwm",
+            "pinName": "test_pwm"
+          },
+          {
+            "pinType": "analog",
+            "pinID": "0",
+            "pinMode": "read",
+            "pinName": "test_analog"
           }
         ]
       }
@@ -35,16 +53,16 @@
         {
             "name": "stage_1",
             "brd": "1",
-            "in": ["(not rel_1)", "(not test_led"],
+            "in": ["(not rel_1)", "(not test_led)"],
             "exp": ["(gerkon_1)"],
-            "out": ["rel_1"]
+            "out": ["(rel_1 1)"]
         },
         {
             "name": "stage_2",
             "brd": "1",
-            "in": ["(not test_led"],
+            "in": ["(not test_led)"],
             "exp": ["(gerkon_2)"],
-            "out": ["test_led"]
+            "out": ["(test_led 1)", "(rel_2 1)"]
         }
     ]
 }
