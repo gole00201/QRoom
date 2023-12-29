@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <Arduino.h>
 
-typedef void (*FP)(uint8_t, uint8_t);
+typedef int (*FP)(uint8_t, int);
 
 /* Сообщение конфигурации пина*/
 typedef struct CFG_PIN_MSG{
@@ -15,6 +15,7 @@ typedef struct CFG_PIN_MSG{
 /* Сообщение конфигурации контроллера*/
 typedef struct CFG_PACK{
     uint8_t st_f;
+    uint8_t addr;
     uint8_t pin_cnt;
     CFG_PIN_MSG *pins_cfg;
     uint16_t crc;
@@ -25,7 +26,8 @@ typedef struct CFG_PACK{
 typedef struct PIN_STATE{
     CFG_PIN_MSG cfg;
     FP action;
-    uint16_t val;
+    uint16_t read;
+    uint16_t write;
 }PIN_STATE;
 
 /* Состояние контроллера*/
@@ -34,6 +36,8 @@ typedef struct BRD_STATE{
     uint8_t pins_cnt;
     PIN_STATE* pins;
 }BRD_STATE;
+
+void rs_send_state(BRD_STATE);
 
 /**
  * @brief Принимает сообщение конфигурации от сервера
@@ -60,3 +64,11 @@ uint8_t brd_parse_cfg(CFG_PACK cfg, BRD_STATE* brd);
  * @param i номер пина (условный)
  */
 void brd_cfg_pin(CFG_PIN_MSG cfg, BRD_STATE* brd, size_t i);
+
+int digital_write_action(uint8_t pin_n, int data);
+
+int digital_read_action(uint8_t pin_n, int data);
+
+int analog_read_action(uint8_t pin_n, int data);
+
+int abalog_write_action(uint8_t pin_n, int data);

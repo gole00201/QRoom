@@ -14,8 +14,9 @@ void loop(){
     {
         for (size_t i = 0; i < cntx.pins_cnt; ++i){
             PIN_STATE pin = cntx.pins[i];
-            pin.action(pin.cfg.pin_n, pin.val);
+            cntx.pins[i].read = pin.action(pin.cfg.pin_n, pin.write);
         }
-        delay(500);
+        rs_send_state(cntx);
+        delay(10);
     }
 }

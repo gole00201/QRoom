@@ -8,6 +8,7 @@ import time
 BAUD = 9600
 ST_F = 0xFA
 EN_F = 0xAF
+EN_F_S = b'\xaf'
 
 # TODO CRC-16 COM_MSG
 
@@ -43,6 +44,7 @@ class Brd:
         self.id = brd_dict["boardID"]
         self.list_of_pins = []
         self.conn = BrdConn()
+        self.state = {}
         self.__configurate_pins(brd_dict["pins"])
 
     def __configurate_pins(self, pins_dict):
@@ -53,6 +55,8 @@ class Brd:
             pin_t.type = pin["pinType"]
             pin_t.id = pin["pinID"]
             pin_t.mode = pin["pinMode"]
+            self.state[pin_t.name] = {"id": pin_t.id,
+                                      "val": ""}
             self.list_of_pins.append(pin_t)
         self.pin_c = len(self.list_of_pins)
         # /* Сообщение конфигурации контроллера*/
@@ -63,7 +67,8 @@ class Brd:
         #     uint16_t crc; - 2 * байт
         #     uint8_t en_f; - байт
         # }CFG_PACK;
-        fmt = f"!BB{'BBB' * self.pin_c}BBB"
+        self.cfg_fmt = f"!BBB{'BBB' * self.pin_c}BBB"
+        self.state_fmt = f"!BBB{'BBB' * self.pin_c}BBB"
         pin_cfg_list = []
         # TODO Общая таблица для конфигурации
         for pin in self.list_of_pins:
@@ -73,16 +78,23 @@ class Brd:
                 p_type = 0x0D
                 if pin.mode == "write":
                     p_mode = 0xFF
-            pin_cfg_list.append([int(p_id), int(p_type), int(p_mode)])
-        pin_cfg_list = [i[0] for i in pin_cfg_list] + \
-                       [i[1] for i in pin_cfg_list] + \
-                       [i[2] for i in pin_cfg_list]
-        self.cfg_str = struct.pack(fmt, ST_F,
+                if pin.mode == "read":
+                    p_mode = 0xAA
+            pin_cfg_list += [int(p_id), int(p_type), int(p_mode)]
+        self.cfg_str = struct.pack(self.cfg_fmt, ST_F, self.id,
                                    self.pin_c,
                                    *pin_cfg_list,
                                    0xFF,
                                    0xFF,
                                    EN_F)
+
+    def get_pin_data(self):
+        try:
+            data = struct.unpack(self.state_fmt,
+                                 self.conn.ser.read_until(EN_F_S))
+            print(data)
+        except struct.error:
+            print("ERROR: LOG ME")
 
     def configurate(self):
         self.conn.send(self.cfg_str)
@@ -102,10 +114,10 @@ class CfgParser:
 
 if __name__ == "__main__":
     cfg = CfgParser("../cfg/witcher_game/board.cfg.json",
-                    "../cfg/witcher_game/omap.cfg.json")
+                    "../cfg/witcher_game/room.cfg.json")
     list_of_brd = []
     for brd in cfg.brds_cfg["boards"]:
         brd = Brd(brd)
         brd.configurate()
     while 1:
-        pass
+        brd.get_pin_data()

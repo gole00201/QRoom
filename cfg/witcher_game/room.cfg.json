@@ -1,0 +1,10 @@
+{
+    "stage_1":{
+        "expr": "(gerkon_1)",
+        "out": "(not rel_1)"
+    },
+    "stage_2":{
+        "expr": "(gerkon_2)",
+        "out": "(test_led)"
+    }
+}

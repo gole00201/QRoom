@@ -9,6 +9,24 @@
             "pinType": "digital",
             "pinMode" : "write",
             "pinName": "test_led"
+          },
+          {
+            "pinID": "2",
+            "pinType": "digital",
+            "pinMode": "write",
+            "pinName": "rel_1"
+          },
+          {
+            "pinID": "3",
+            "pinType": "digital",
+            "pinMode": "read",
+            "pinName": "gerkon_1"
+          },
+          {
+            "pinID": "4",
+            "pinType": "digital",
+            "pinMode": "read",
+            "pinName": "gerkon_2"
           }
         ]
       }
