@@ -14,9 +14,9 @@ void rs_get_cfg(CFG_PACK* cfgPack){
     Serial.readBytes((uint8_t *)cfgPack->pins_cfg,
                      cfgPack->pin_cnt * sizeof(CFG_PIN_MSG));
 
-    while (Serial.available() < sizeof(uint16_t)) {}
+    while (Serial.available() < sizeof(uint8_t)) {}
     Serial.readBytes((uint8_t *)&cfgPack->crc,
-                     sizeof(uint16_t));
+                     sizeof(uint8_t));
 
     while (Serial.available() < 1) {}
     cfgPack->en_f = Serial.read();

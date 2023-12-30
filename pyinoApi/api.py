@@ -55,18 +55,28 @@ class Brd:
         self.state = {}
         self.pin_names = {}
         self.configurate_pins(brd_dict["pins"])
-        self.cfg_fmt = f"!BBB{'BBB' * self.pin_c}BBB"
+        self.cfg = f"!BBB{'BBB' * self.pin_c}BB"
         self.state_fmt = f"!BBB{'BHH' * self.pin_c}BBB"
-        self.change_fmt = "!BBBBB"
-        self.cfg_str = struct.pack(self.cfg_fmt, ST_F, self.id,
-                                   self.pin_c,
-                                   *self.pin_cfg_list,
-                                   0xFF,
-                                   0xFF,
-                                   EN_F)
+        self.change_fmt = "!BBBBBB"
+        self.cfg_with_crc = struct.pack(self.cfg, ST_F, self.id,
+                                        self.pin_c,
+                                        *self.pin_cfg_list,
+                                        0xFF,
+                                        EN_F)
+
+    def crc8(self, buffer):
+        crc = 0
+        for data in buffer:
+            for _ in range(8, 0, -1):
+                if (crc ^ data) & 1:
+                    crc = (crc >> 1) ^ 0x8C
+                else:
+                    crc >>= 1
+                data >>= 1
+        return crc & 0xFF
 
     def configurate_pins(self, pins_dict):
-        """Создает строку форматирования для struct"""
+        """Парсинг конфига пинов"""
         for pin in pins_dict:
             pin_t = BrdPin()
             pin_t.name = pin["pinName"]
@@ -98,10 +108,11 @@ class Brd:
             self.pin_cfg_list += [int(p_id), int(p_type), int(p_mode)]
 
     def get_state(self):
+        """Прием текущего состояния от контроллера"""
         read = self.conn.ser.read_until(EN_F_S)
         try:
+            # TODO CRC и проверка ошибок
             data = struct.unpack(self.state_fmt, read)
-            print(data)
             pin_c = data[2]
             pins = [(data[i], data[i + 1])
                     for i in range(3, pin_c * 3 + 1, 3)]
@@ -111,18 +122,23 @@ class Brd:
             pass
 
     def check(self, pin_name):
+        """Обращение к текущему состоянию пина с которого читаем"""
         return self.state[pin_name].read
 
     def change(self, pin_name, data):
+        """Запись в пин"""
+        if data == self.state[pin_name].write:
+            return
         self.state[pin_name].write = data
         pin_n = int(self.state[pin_name].id)
         msg = struct.pack(self.change_fmt,
                           ST_F, self.id,
-                          pin_n, data, EN_F)
+                          pin_n, data, 0xFF,
+                          EN_F)
         self.conn.send(msg)
 
     def configurate(self):
-        self.conn.send(self.cfg_str)
+        self.conn.send(self.cfg_with_crc)
 
 
 class CfgParser:
@@ -135,17 +151,3 @@ class CfgParser:
         with open(path) as f:
             data = f.read()
         return json.loads(data)
-
-
-if __name__ == "__main__":
-    cfg = CfgParser("../cfg/witcher_game/board.cfg.json",
-                    "../cfg/witcher_game/room.cfg.json")
-    list_of_brd = []
-    for brd in cfg.brds_cfg["boards"]:
-        brd = Brd(brd)
-        brd.configurate()
-    k = 0
-    while 1:
-        brd.get_state()
-        print(brd.state["gerkon_1"].read)
-        pass

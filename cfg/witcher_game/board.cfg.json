@@ -48,21 +48,5 @@
           }
         ]
       }
-    ],
-    "stages":[
-        {
-            "name": "stage_1",
-            "brd": "1",
-            "in": ["(not rel_1)", "(not test_led)"],
-            "exp": ["(gerkon_1)"],
-            "out": ["(rel_1 1)"]
-        },
-        {
-            "name": "stage_2",
-            "brd": "1",
-            "in": ["(not test_led)"],
-            "exp": ["(gerkon_2)"],
-            "out": ["(test_led 1)", "(rel_2 1)"]
-        }
     ]
 }

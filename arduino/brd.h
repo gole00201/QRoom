@@ -18,7 +18,7 @@ typedef struct CFG_PACK{
     uint8_t addr;
     uint8_t pin_cnt;
     CFG_PIN_MSG *pins_cfg;
-    uint16_t crc;
+    uint8_t crc;
     uint8_t en_f;
 }CFG_PACK;
 
@@ -119,4 +119,11 @@ uint16_t analog_write_action(uint8_t pin_n, uint16_t data);
  */
 void rs_get_check_msg(CHANGE_MSG* data);
 
+
+/**
+ * @brief Изменяем выходное состояние в соответсвии с принятым сообщением
+ *
+ * @param data сообщение об изменении
+ * @param cntx контекст выполнения
+ */
 void brd_change_outs(CHANGE_MSG data, BRD_STATE* cntx);
