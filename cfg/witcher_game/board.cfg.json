@@ -6,45 +6,15 @@
         "pins": [
           {
             "pinType": "digital",
-            "pinID": "13",
-            "pinMode" : "write",
-            "pinName": "test_led"
-          },
-          {
-            "pinType": "digital",
-            "pinID": "10",
-            "pinMode": "write",
-            "pinName": "rel_1"
-          },
-          {
-            "pinType": "digital",
-            "pinID": "3",
-            "pinMode": "read",
-            "pinName": "gerkon_1"
-          },
-          {
-            "pinType": "digital",
-            "pinID": "4",
-            "pinMode": "read",
-            "pinName": "gerkon_2"
+            "pinID": "6",
+            "pinMode": "blinker",
+            "pinName": "light_1"
           },
           {
             "pinType": "digital",
             "pinID": "7",
             "pinMode": "write",
-            "pinName": "rel_2"
-          },
-          {
-            "pinType": "digital",
-            "pinID": "11",
-            "pinMode": "pwm",
-            "pinName": "test_pwm"
-          },
-          {
-            "pinType": "analog",
-            "pinID": "0",
-            "pinMode": "read",
-            "pinName": "test_analog"
+            "pinName": "led_1"
           }
         ]
       }

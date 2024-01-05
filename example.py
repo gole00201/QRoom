@@ -12,6 +12,7 @@
 # проверку адресов. Ну и перенести все на RS-485.
 # просто из-за НГ до сих пор не пришли конверторы =(
 from pyinoApi.api import CfgParser, Brd
+import time
 
 if __name__ == "__main__":
     cfg = CfgParser("./cfg/witcher_game/board.cfg.json",
@@ -20,19 +21,15 @@ if __name__ == "__main__":
     brd = Brd(cfg.brds_cfg["boards"][0])
     brd.configurate()
     print(f"ПЛАТА: {brd.type} {brd.id} сконфигурировна")
+    s_t = time.time()
+    k = 0
+    brd.change("light_1", 1)
     while 1:
+        k += 1
+        brd.get_state()  # Каждый тик мы обновляем состояние контроллера
+        brd.change("led_1", k % 2)
+        print(k)
         # Основной цикл
         # Тут стадии игр обращение к БД, да в принципе что угодно
-        brd.get_state()  # Каждый тик мы обновляем состояние контроллера
         # Теперь можно отреагировать на воздействия
-        if not brd.check("gerkon_1"):
-            # И дать управляющие воздействия
-            brd.change("rel_1", 1)
-        else:
-            brd.change("rel_1", 0)
-        if not brd.check("gerkon_2"):
-            brd.change("rel_2", 1)
-            brd.change("test_led", 1)
-        else:
-            brd.change("rel_2", 0)
-            brd.change("test_led", 0)
+        pass

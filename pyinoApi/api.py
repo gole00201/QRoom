@@ -14,6 +14,7 @@ WRITE = 0xFF
 READ = 0xAA
 PWM = 0xF0
 ANALOG = 0x0A
+BLINKER = 0x0F
 
 # TODO CRC-16 COM_MSG
 
@@ -56,12 +57,13 @@ class Brd:
         self.pin_names = {}
         self.configurate_pins(brd_dict["pins"])
         self.cfg = f"!BBB{'BBB' * self.pin_c}BB"
-        self.state_fmt = f"!BBB{'BHH' * self.pin_c}BBB"
+        self.state_fmt = f"!BBB{'BHH' * self.pin_c}BB"
         self.change_fmt = "!BBBBBB"
+        crc = self.crc8(self.pin_cfg_list)
         self.cfg_with_crc = struct.pack(self.cfg, ST_F, self.id,
                                         self.pin_c,
                                         *self.pin_cfg_list,
-                                        0xFF,
+                                        crc,
                                         EN_F)
 
     def crc8(self, buffer):
@@ -99,6 +101,8 @@ class Brd:
                     p_mode = READ
                 elif pin.mode == "pwm":
                     p_mode = PWM
+                elif pin.mode == "blinker":
+                    p_mode = BLINKER
             elif pin.type == "analog":
                 p_type = ANALOG
                 if pin.mode == "read":
@@ -114,12 +118,17 @@ class Brd:
             # TODO CRC и проверка ошибок
             data = struct.unpack(self.state_fmt, read)
             pin_c = data[2]
+            crc = self.crc8(read[3: pin_c * 6 + 1])
+            if crc != data[-2]:
+                print("STATE: BROKEN_CRC")
+                return
             pins = [(data[i], data[i + 1])
                     for i in range(3, pin_c * 3 + 1, 3)]
+            print(pins)
             for num, read in pins:
                 self.state[self.pin_names[str(num)]].read = read
         except struct.error:
-            pass
+            print("STATE: BROKEN_PACK")
 
     def check(self, pin_name):
         """Обращение к текущему состоянию пина с которого читаем"""

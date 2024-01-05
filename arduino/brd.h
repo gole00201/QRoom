@@ -113,6 +113,15 @@ uint16_t analog_read_action(uint8_t pin_n, uint16_t data);
 uint16_t analog_write_action(uint8_t pin_n, uint16_t data);
 
 /**
+ * @breif Шаблон функции для случайного моргания чего-бы то нибыло
+ *
+ * @param pin_n Номер пина
+ * @param data не валидный аргумент
+ * @return текущее установленное значение
+ */
+uint16_t light_blink_action(uint8_t pin_n, uint16_t data);
+
+/**
  * @brief Функция чтения сообщения об изменении состояния выхода
  *
  * @param data созданное на стеке сообщение
@@ -127,3 +136,18 @@ void rs_get_check_msg(CHANGE_MSG* data);
  * @param cntx контекст выполнения
  */
 void brd_change_outs(CHANGE_MSG data, BRD_STATE* cntx);
+
+/**
+ * @brief Линейный рассчет хэша на весь пакет
+ * @param buffer данные
+ * @param size размер данных
+ * @return uint8_t расчитанный хэш
+ */
+uint8_t crc8(uint8_t* buffer, size_t size);
+
+/**
+ * @brief Динамический рассчет хэша поэлементно
+ * @param crc указатель на хэш
+ * @param data следующее число
+ */
+void crc8_dynamic(uint8_t* crc, uint8_t data);
