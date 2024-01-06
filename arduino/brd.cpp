@@ -25,23 +25,23 @@ void brd_cfg_pin(CFG_PIN_MSG cfg, BRD_STATE* brd, size_t i){
     PIN_STATE *pin = &brd->pins[i];
     if(pin->cfg.pin_t == 0x0D){
         /* Цифровой 1/0*/
-        if(pin->cfg.pin_mode == 0xFF){
+        if(pin->cfg.pin_mode == WRITE){
             pinMode(pin->cfg.pin_n, OUTPUT);
             pin->action = digital_write_action;
             pin->write = 0;
-        } else if(pin->cfg.pin_mode == 0xAA){
+        } else if(pin->cfg.pin_mode == READ){
             pinMode(pin->cfg.pin_n, INPUT);
             pin->action = digital_read_action;
             pin->write = 0;
-        } else if(pin->cfg.pin_mode == 0xF0){
+        } else if(pin->cfg.pin_mode == PWM){
             pinMode(pin->cfg.pin_n, OUTPUT);
             pin->action = analog_write_action;
             pin->write = 0;
-        } else if (pin->cfg.pin_mode == 0x0F){
+        } else if (pin->cfg.pin_mode == BLINKER){
             pinMode(pin->cfg.pin_n, OUTPUT);
             pin->action = light_blink_action;
             pin->write = 0;
-        } else if (pin->cfg.pin_mode == 0x0C){
+        } else if (pin->cfg.pin_mode == RFID){
             pin->rfid = OneWire(pin->cfg.pin_n);
             pin->action = NULL;
             pin->rfid_action = rfid_action;
@@ -50,29 +50,43 @@ void brd_cfg_pin(CFG_PIN_MSG cfg, BRD_STATE* brd, size_t i){
             pin->action = NULL;
         }
     }
-    if(pin->cfg.pin_t == 0x0A){
+    if(pin->cfg.pin_t == ANALOG){
         /* Аналоговый */
-        if(pin->cfg.pin_mode == 0xAA){
+        if(pin->cfg.pin_mode == READ){
            pinMode(pin->cfg.pin_n, INPUT);
            pin->action = analog_read_action;
            pin->write = 0;
+        } else {
+            pin->action = NULL;
         }
     }
 }
 
 uint8_t brd_parse_cfg(CFG_PACK cfg, BRD_STATE* brd){
     if (cfg.st_f != ST_F){
+        Serial.write(0xFA);
+        Serial.write(0x01);
+        Serial.write(0xAF);
         return 0x01;
     }
     if (cfg.addr != 0x01){
+        Serial.write(0xFA);
+        Serial.write(0x03);
+        Serial.write(0xAF);
         return 0x03;
     }
     uint8_t crc_val = crc8((uint8_t*) cfg.pins_cfg,
                             cfg.pin_cnt * sizeof(CFG_PIN_MSG));
     if(crc_val != cfg.crc){
+        Serial.write(0xFA);
+        Serial.write(0x04);
+        Serial.write(0xAF);
         return 0x04;
     }
     if (cfg.en_f != EN_F){
+        Serial.write(0xFA);
+        Serial.write(0x02);
+        Serial.write(0xAF);
         return 0x02;
     }
     brd->addr = cfg.addr;
@@ -130,6 +144,7 @@ uint16_t analog_read_action(uint8_t pin_n, uint16_t data){
     return analogRead(pin_n);
 }
 
+
 uint16_t analog_write_action(uint8_t pin_n, uint16_t data){
     analogWrite(pin_n, data);
     return data;
@@ -168,6 +183,7 @@ void rs_get_check_msg(CHANGE_MSG* data){
     while (Serial.available() < sizeof(CHANGE_MSG)) {}
     data->st_f = Serial.read();
     data->addr = Serial.read();
+    data->comm = Serial.read();
     data->pin_n = Serial.read();
     data->write |= Serial.read() << 8;
     data->write = Serial.read();

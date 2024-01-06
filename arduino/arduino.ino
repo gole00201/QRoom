@@ -1,5 +1,7 @@
 #include "brd.h"
 
+void(* resetFunc) (void) = 0;
+
 void setup(){
     Serial.begin(57600);
 }
@@ -12,12 +14,25 @@ void loop(){
         /* Принимаем конфигурацию*/
         rs_get_cfg(&cfg);
     } while(brd_parse_cfg(cfg, &cntx));
+    Serial.write(0xFA);
+    Serial.write(0xAA);
+    Serial.write(0xAF);
     while (1)
     {
         if (Serial.available()){
             /* Обрабатываем сообщение об изменении состояния*/
             rs_get_check_msg(&msg);
-            brd_change_outs(msg, &cntx);
+            if (msg.comm != 0){
+                if(msg.comm == 0xFF){
+                    cntx.talk = 1;
+                } else if (msg.comm == 0xDD){
+                    cntx.talk = 0;
+                } else if (msg.comm == 0xAA){
+                    resetFunc();
+                }
+            } else {
+                brd_change_outs(msg, &cntx);
+            }
         }
         for (size_t i = 0; i < cntx.pins_cnt; ++i){
             /* Обновляем состояние каждого пина */
@@ -28,7 +43,7 @@ void loop(){
                 cntx.pins[i].read_rfid = pin.rfid_action(cntx.pins[i].rfid);
             }
         }
-        if (Serial.availableForWrite()){
+        if (Serial.availableForWrite() && cntx.talk){
             /* Отправляем актуальное состояние*/
             rs_send_state(cntx);
         }

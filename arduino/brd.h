@@ -7,6 +7,16 @@
 typedef uint16_t (*FP)(uint8_t, uint16_t);
 typedef uint64_t (*FP_64)(OneWire);
 
+#define DIGITAL 0x0D
+#define WRITE 0xFF
+#define READ 0xAA
+#define PWM 0xF0
+#define ANALOG 0x0A
+#define BLINKER 0x0F
+#define RFID 0x0C
+#define TALK 0xFF
+#define DONT_TALK 0xDD
+
 /* Сообщение конфигурации пина*/
 typedef struct CFG_PIN_MSG{
     uint8_t pin_n;
@@ -45,9 +55,8 @@ typedef struct RFID_STATE{
 typedef struct BRD_STATE{
     uint8_t addr;
     uint8_t pins_cnt;
+    uint8_t talk;
     PIN_STATE* pins;
-    uint8_t rfid_pins_cnt;
-    RFID_STATE* rfid_pins;
 }BRD_STATE;
 
 /*Сообщение о смене состояния пина выхода*/
@@ -55,6 +64,7 @@ typedef struct CHANGE_MSG
 {
     uint8_t st_f;
     uint8_t addr;
+    uint8_t comm;
     uint8_t pin_n;
     uint16_t write;
     uint8_t en_f;

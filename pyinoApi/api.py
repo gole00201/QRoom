@@ -5,6 +5,12 @@ import serial.tools.list_ports
 import json
 import re
 import time
+import logging
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 BAUD = 57600
 ST_F = 0xFA
 EN_F = 0xAF
@@ -16,6 +22,9 @@ PWM = 0xF0
 ANALOG = 0x0A
 BLINKER = 0x0F
 RFID = 0x0C
+TALK = 0xFF
+DONT_TALK = 0xDD
+NO_ERR = 0xAA
 
 
 class BrdConn:
@@ -31,6 +40,9 @@ class BrdConn:
 
     def send(self, data):
         self.ser.write(data)
+
+    def read(self):
+        return self.ser.read_until(EN_F_S)
 
 
 class BrdPin:
@@ -53,9 +65,10 @@ class Brd:
         self.list_of_pins = []
         self.state = {}
         self.pin_names = {}
+        self.talk = 0
         self.configurate_pins(brd_dict["pins"])
         self.configure_state_fmt()
-        self.change_fmt = "!BBBHB"
+        self.change_fmt = "!BBBBHB"
         crc = self.crc8(self.pin_cfg_list)
         self.cfg_with_crc = struct.pack(self.cfg, ST_F, self.id,
                                         self.pin_c,
@@ -82,13 +95,11 @@ class Brd:
             pin_t.type = pin["pinType"]
             pin_t.id = pin["pinID"]
             if pin_t.id in list(self.pin_names.keys()):
-                print(f"ERROR: pin id duplicate {pin_t.id}")
-                self.conn.ser.close()
-                exit(1)
+                logging.error(f"pin id duplicate {pin_t.id}")
+                self.die()
             if pin_t.name in list(self.pin_names.values()):
-                print(f"ERROR: pin name duplicate {pin_t.name}")
-                self.conn.ser.close()
-                exit(1)
+                logging.error(f"pin name duplicate {pin_t.name}")
+                self.die()
             pin_t.mode = pin["pinMode"]
             self.state[pin_t.name] = pin_t
             self.pin_names[pin_t.id] = pin_t.name
@@ -96,7 +107,7 @@ class Brd:
         self.pin_c = len(self.list_of_pins)
         self.pin_cfg_list = []
         for pin in self.list_of_pins:
-            p_mode = p_id = p_type = 0x00
+            p_id = p_type = 0xFF
             p_id = pin.id
             if pin.type == "digital":
                 p_type = DIGITAL
@@ -116,6 +127,9 @@ class Brd:
                     p_mode = READ
                 elif pin.mode == "write":
                     p_mode = WRITE
+            if p_id == 0xFF or p_type == 0xFF:
+                logging.error(f"pin {pin_t.name} is not correct")
+                self.die()
             self.pin_cfg_list += [int(p_id), int(p_type), int(p_mode)]
         self.cfg = f"!BBB{'BBB' * self.pin_c}BB"
 
@@ -128,23 +142,29 @@ class Brd:
                 self.state_fmt += "BHH"
         self.state_fmt += "BB"
 
+    def check_crc(self, read, read_crc):
+        crc = self.crc8(read[3: -2])
+        if crc != read_crc:
+            logging.warning("CRC BROKEN")
+            return False
+        return True
+
     def get_state(self):
         """Прием текущего состояния от контроллера"""
-        read = self.conn.ser.read_until(EN_F_S)
+        if not self.talk:
+            return
+        read = self.conn.read()
         try:
             data = struct.unpack(self.state_fmt, read)
-            pin_c = data[2]
-            print(data)
-            crc = self.crc8(read[3: -2])
-            if crc != data[-2]:
-                print("STATE: BROKEN_CRC")
+            if not self.check_crc(read, data[-2]):
                 return
-            pins = [(data[i], data[i + 1])
-                    for i in range(3, pin_c * 3 + 1, 3)]
+            pin_c = data[2]
+            pins = [(data[i], data[i + 1]) for i in range(3, pin_c * 3 + 1, 3)]
             for num, read in pins:
                 self.state[self.pin_names[str(num)]].read = read
+            logging.info("STATE OK")
         except struct.error:
-            print("STATE: BROKEN_PACK")
+            logging.warning("STATE BROKEN")
 
     def check(self, pin_name):
         """Обращение к текущему состоянию пина с которого читаем"""
@@ -157,13 +177,42 @@ class Brd:
         self.state[pin_name].write = data
         pin_n = int(self.state[pin_name].id)
         msg = struct.pack(self.change_fmt,
-                          ST_F, self.id,
+                          ST_F, self.id, 0,
                           pin_n, data,
                           EN_F)
         self.conn.send(msg)
 
+    def comm(self, comm):
+        if comm == TALK:
+            self.talk = True
+        elif comm == DONT_TALK:
+            self.talk = False
+        msg = struct.pack(self.change_fmt,
+                          ST_F, self.id, comm,
+                          0, 0,
+                          EN_F)
+        self.conn.send(msg)
+
+    def reboot(self):
+        self.comm(0xAA)
+
     def configurate(self):
-        self.conn.send(self.cfg_with_crc)
+        while 1:
+            self.conn.send(self.cfg_with_crc)
+            answ = self.conn.read()
+            if len(answ) > 3:
+                self.reboot()
+                time.sleep(1)
+            err = answ[1]
+            if err == NO_ERR:
+                logging.info("Cfg was accepted")
+                return
+            else:
+                logging.warning(f"Dont accept the cfg: {err}")
+
+    def die(self):
+        self.conn.ser.close()
+        exit(1)
 
 
 class CfgParser:

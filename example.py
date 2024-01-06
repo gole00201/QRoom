@@ -9,18 +9,15 @@
 
 
 # Ну и перенести все на RS-485.
-from pyinoApi.api import CfgParser, Brd
+from pyinoApi.api import CfgParser, Brd, TALK
+
 
 if __name__ == "__main__":
     cfg = CfgParser("./cfg/witcher_game/board.cfg.json")
-    # Плата только одна (пока что)
     brd = Brd(cfg.brds_cfg["boards"][0])
     brd.configurate()
-    print(f"ПЛАТА: {brd.type} {brd.id} сконфигурировна")
-    k = 0
-    brd.change("margnet_frog", 1)
+    brd.comm(TALK)
     while 1:
-        k += 1
         brd.get_state()  # Каждый тик мы обновляем состояние контроллера
         # Основной цикл
         # Тут стадии игр обращение к БД, да в принципе что угодно

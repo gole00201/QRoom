@@ -76,7 +76,6 @@
             "pinMode": "write",
             "pinName": "smoke_on"
           }
-
         ]
       }
     ]
