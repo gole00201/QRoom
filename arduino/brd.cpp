@@ -26,25 +26,28 @@ void brd_cfg_pin(CFG_PIN_MSG cfg, BRD_STATE* brd, size_t i){
     if(pin->cfg.pin_t == 0x0D){
         /* Цифровой 1/0*/
         if(pin->cfg.pin_mode == 0xFF){
-            /*Тестовая конфигурация, нужна таблица*/
             pinMode(pin->cfg.pin_n, OUTPUT);
             pin->action = digital_write_action;
             pin->write = 0;
-        }
-        if(pin->cfg.pin_mode == 0xAA){
+        } else if(pin->cfg.pin_mode == 0xAA){
             pinMode(pin->cfg.pin_n, INPUT);
             pin->action = digital_read_action;
             pin->write = 0;
-        }
-        if(pin->cfg.pin_mode == 0xF0){
+        } else if(pin->cfg.pin_mode == 0xF0){
             pinMode(pin->cfg.pin_n, OUTPUT);
             pin->action = analog_write_action;
             pin->write = 0;
-        }
-        if (pin->cfg.pin_mode == 0x0F){
+        } else if (pin->cfg.pin_mode == 0x0F){
             pinMode(pin->cfg.pin_n, OUTPUT);
             pin->action = light_blink_action;
             pin->write = 0;
+        } else if (pin->cfg.pin_mode == 0x0C){
+            pin->rfid = OneWire(pin->cfg.pin_n);
+            pin->action = NULL;
+            pin->rfid_action = rfid_action;
+            pin->write = 0;
+        } else{
+            pin->action = NULL;
         }
     }
     if(pin->cfg.pin_t == 0x0A){
@@ -61,9 +64,6 @@ uint8_t brd_parse_cfg(CFG_PACK cfg, BRD_STATE* brd){
     if (cfg.st_f != ST_F){
         return 0x01;
     }
-    if (cfg.en_f != EN_F){
-        return 0x02;
-    }
     if (cfg.addr != 0x01){
         return 0x03;
     }
@@ -71,6 +71,9 @@ uint8_t brd_parse_cfg(CFG_PACK cfg, BRD_STATE* brd){
                             cfg.pin_cnt * sizeof(CFG_PIN_MSG));
     if(crc_val != cfg.crc){
         return 0x04;
+    }
+    if (cfg.en_f != EN_F){
+        return 0x02;
     }
     brd->addr = cfg.addr;
     brd->pins_cnt = cfg.pin_cnt;
@@ -90,11 +93,19 @@ void rs_send_state(BRD_STATE cntx){
         Serial.write(cntx.pins[i].cfg.pin_n);
         crc8_dynamic(&crc, cntx.pins[i].cfg.pin_n);
 
-        Serial.write((cntx.pins[i].read >> 8) & 0xFF);
-        crc8_dynamic(&crc, (cntx.pins[i].read >> 8) & 0xFF);
+        if(cntx.pins[i].cfg.pin_mode == 0x0C){
+            uint8_t* rfid_read = (uint8_t*) &cntx.pins[i].read_rfid;
+            for(int i = sizeof(uint64_t) - 1; i >= 0; i--){
+                Serial.write(rfid_read[i]);
+                crc8_dynamic(&crc, rfid_read[i]);
+            }
+        } else {
+            Serial.write((cntx.pins[i].read >> 8) & 0xFF);
+            crc8_dynamic(&crc, (cntx.pins[i].read >> 8) & 0xFF);
+            Serial.write(cntx.pins[i].read & 0xFF);
+            crc8_dynamic(&crc, cntx.pins[i].read & 0xFF);
+        }
 
-        Serial.write(cntx.pins[i].read & 0xFF);
-        crc8_dynamic(&crc, cntx.pins[i].read & 0xFF);
 
         Serial.write((cntx.pins[i].write >> 8) & 0xFF);
         crc8_dynamic(&crc, (cntx.pins[i].write >> 8) & 0xFF);
@@ -102,20 +113,13 @@ void rs_send_state(BRD_STATE cntx){
         Serial.write(cntx.pins[i].write & 0xFF);
         crc8_dynamic(&crc, cntx.pins[i].write & 0xFF);
     }
-    Serial.write(crc); // CRC - 8
+    Serial.write(crc);
     Serial.write(EN_F);
 }
 
 uint16_t digital_write_action(uint8_t pin_n, uint16_t data){
-    uint16_t ret = 0;
-    if(data > 0){
-        ret = HIGH;
-        digitalWrite(pin_n, HIGH);
-    } else{
-        ret = LOW;
-        digitalWrite(pin_n, LOW);
-    }
-    return ret;
+    digitalWrite(pin_n, data);
+    return data;
 }
 
 uint16_t digital_read_action(uint8_t pin_n, uint16_t data){
@@ -132,8 +136,8 @@ uint16_t analog_write_action(uint8_t pin_n, uint16_t data){
 }
 
 uint16_t light_blink_action(uint8_t pin_n, uint16_t data){
-    if(data > 0){
-        if(millis() % 100 == 0){
+    if(data){
+        if(millis() % 10 == 0){
             analogWrite(pin_n, (25 + random(-10, 100)));
         }
     } else {
@@ -142,8 +146,33 @@ uint16_t light_blink_action(uint8_t pin_n, uint16_t data){
     return data;
 }
 
+uint64_t rfid_action(OneWire rfid){
+    uint8_t addr[8];
+    if (rfid.reset()) {
+        rfid.write(0x33);
+        // delay(2);
+        for (int i = 0; i < 8; i++) {
+            addr[i] = rfid.read();
+        }
+        uint64_t rfidAddress = 0;
+        for (int i = 0; i < 8; i++) {
+            rfidAddress |= static_cast<uint64_t>(addr[i]) << (i * 8);
+        }
+        return rfidAddress;
+    } else {
+        return 0;
+    }
+}
+
 void rs_get_check_msg(CHANGE_MSG* data){
-    Serial.readBytesUntil(0xaf, (uint8_t *)data, sizeof(CHANGE_MSG));
+    while (Serial.available() < sizeof(CHANGE_MSG)) {}
+    data->st_f = Serial.read();
+    data->addr = Serial.read();
+    data->pin_n = Serial.read();
+    data->write |= Serial.read() << 8;
+    data->write = Serial.read();
+    data->en_f = Serial.read();
+    // Serial.readBytesUntil(0xaf, (uint8_t *)data, sizeof(CHANGE_MSG));
 }
 
 void brd_change_outs(CHANGE_MSG data, BRD_STATE* cntx){
@@ -157,7 +186,7 @@ void brd_change_outs(CHANGE_MSG data, BRD_STATE* cntx){
 uint8_t crc8(uint8_t* buffer, size_t size){
     uint8_t crc = 0;
     for (size_t i = 0; i < size; ++i) {
-        uint8_t data = buffer[i];  // Create a local copy of the data
+        uint8_t data = buffer[i];
         for (int j = 8; j > 0; --j) {
             if ((crc ^ data) & 1) {
                 crc = (crc >> 1) ^ 0x8C;

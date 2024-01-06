@@ -15,8 +15,7 @@ READ = 0xAA
 PWM = 0xF0
 ANALOG = 0x0A
 BLINKER = 0x0F
-
-# TODO CRC-16 COM_MSG
+RFID = 0x0C
 
 
 class BrdConn:
@@ -24,7 +23,6 @@ class BrdConn:
     def __init__(self):
         ports = serial.tools.list_ports.comports()
         for port in ports:
-            # На данный момент с RS-485 не было отладки
             if re.match(r'/dev/(cu\.usbserial-.+|ttyACM.+)', port.device):
                 self.ser = serial.Serial(port.device, BAUD,
                                          stopbits=1, parity='N')
@@ -51,14 +49,13 @@ class Brd:
     def __init__(self, brd_dict):
         self.type = brd_dict["boardType"]
         self.id = brd_dict["boardID"]
-        self.list_of_pins = []
         self.conn = BrdConn()
+        self.list_of_pins = []
         self.state = {}
         self.pin_names = {}
         self.configurate_pins(brd_dict["pins"])
-        self.cfg = f"!BBB{'BBB' * self.pin_c}BB"
-        self.state_fmt = f"!BBB{'BHH' * self.pin_c}BB"
-        self.change_fmt = "!BBBBBB"
+        self.configure_state_fmt()
+        self.change_fmt = "!BBBHB"
         crc = self.crc8(self.pin_cfg_list)
         self.cfg_with_crc = struct.pack(self.cfg, ST_F, self.id,
                                         self.pin_c,
@@ -67,7 +64,7 @@ class Brd:
                                         EN_F)
 
     def crc8(self, buffer):
-        crc = 0
+        crc = 0x00
         for data in buffer:
             for _ in range(8, 0, -1):
                 if (crc ^ data) & 1:
@@ -84,6 +81,14 @@ class Brd:
             pin_t.name = pin["pinName"]
             pin_t.type = pin["pinType"]
             pin_t.id = pin["pinID"]
+            if pin_t.id in list(self.pin_names.keys()):
+                print(f"ERROR: pin id duplicate {pin_t.id}")
+                self.conn.ser.close()
+                exit(1)
+            if pin_t.name in list(self.pin_names.values()):
+                print(f"ERROR: pin name duplicate {pin_t.name}")
+                self.conn.ser.close()
+                exit(1)
             pin_t.mode = pin["pinMode"]
             self.state[pin_t.name] = pin_t
             self.pin_names[pin_t.id] = pin_t.name
@@ -103,6 +108,8 @@ class Brd:
                     p_mode = PWM
                 elif pin.mode == "blinker":
                     p_mode = BLINKER
+                elif pin.mode == "rfid":
+                    p_mode = RFID
             elif pin.type == "analog":
                 p_type = ANALOG
                 if pin.mode == "read":
@@ -110,21 +117,30 @@ class Brd:
                 elif pin.mode == "write":
                     p_mode = WRITE
             self.pin_cfg_list += [int(p_id), int(p_type), int(p_mode)]
+        self.cfg = f"!BBB{'BBB' * self.pin_c}BB"
+
+    def configure_state_fmt(self):
+        self.state_fmt = "!BBB"
+        for pin in self.list_of_pins:
+            if pin.mode == "rfid":
+                self.state_fmt += "BQH"
+            else:
+                self.state_fmt += "BHH"
+        self.state_fmt += "BB"
 
     def get_state(self):
         """Прием текущего состояния от контроллера"""
         read = self.conn.ser.read_until(EN_F_S)
         try:
-            # TODO CRC и проверка ошибок
             data = struct.unpack(self.state_fmt, read)
             pin_c = data[2]
-            crc = self.crc8(read[3: pin_c * 6 + 1])
+            print(data)
+            crc = self.crc8(read[3: -2])
             if crc != data[-2]:
                 print("STATE: BROKEN_CRC")
                 return
             pins = [(data[i], data[i + 1])
                     for i in range(3, pin_c * 3 + 1, 3)]
-            print(pins)
             for num, read in pins:
                 self.state[self.pin_names[str(num)]].read = read
         except struct.error:
@@ -142,7 +158,7 @@ class Brd:
         pin_n = int(self.state[pin_name].id)
         msg = struct.pack(self.change_fmt,
                           ST_F, self.id,
-                          pin_n, data, 0xFF,
+                          pin_n, data,
                           EN_F)
         self.conn.send(msg)
 
@@ -152,9 +168,8 @@ class Brd:
 
 class CfgParser:
     """Парсер конфигурации (условный класс, стоит его убрать)"""
-    def __init__(self, board_path, omap_path):
+    def __init__(self, board_path):
         self.brds_cfg = self.__read_json(board_path)
-        self.omap_cfg = self.__read_json(omap_path)
 
     def __read_json(self, path):
         with open(path) as f:

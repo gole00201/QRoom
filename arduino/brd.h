@@ -2,8 +2,10 @@
 #define EN_F 0xAF
 #include <stdint.h>
 #include <Arduino.h>
+#include <OneWire.h>
 
 typedef uint16_t (*FP)(uint8_t, uint16_t);
+typedef uint64_t (*FP_64)(OneWire);
 
 /* Сообщение конфигурации пина*/
 typedef struct CFG_PIN_MSG{
@@ -26,15 +28,26 @@ typedef struct CFG_PACK{
 typedef struct PIN_STATE{
     CFG_PIN_MSG cfg;
     FP action;
+    OneWire rfid;
+    FP_64 rfid_action;
     uint16_t read;
+    uint64_t read_rfid;
     uint16_t write;
 }PIN_STATE;
+
+typedef struct RFID_STATE{
+    CFG_PIN_MSG cfg;
+    FP_64 action;
+    uint64_t read;
+}RFID_STATE;
 
 /* Состояние контроллера*/
 typedef struct BRD_STATE{
     uint8_t addr;
     uint8_t pins_cnt;
     PIN_STATE* pins;
+    uint8_t rfid_pins_cnt;
+    RFID_STATE* rfid_pins;
 }BRD_STATE;
 
 /*Сообщение о смене состояния пина выхода*/
@@ -43,7 +56,7 @@ typedef struct CHANGE_MSG
     uint8_t st_f;
     uint8_t addr;
     uint8_t pin_n;
-    uint8_t write; // !CRC 16 BITS
+    uint16_t write;
     uint8_t en_f;
 };
 
@@ -121,12 +134,22 @@ uint16_t analog_write_action(uint8_t pin_n, uint16_t data);
  */
 uint16_t light_blink_action(uint8_t pin_n, uint16_t data);
 
+
+/**
+ * @brief Шаблон функции для получения значения метки
+ *
+ * @return uint64_t значение метки, если ее нет, то 0
+ */
+uint64_t rfid_action(OneWire);
+
 /**
  * @brief Функция чтения сообщения об изменении состояния выхода
  *
  * @param data созданное на стеке сообщение
  */
 void rs_get_check_msg(CHANGE_MSG* data);
+
+
 
 
 /**

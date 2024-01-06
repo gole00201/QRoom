@@ -6,16 +6,77 @@
         "pins": [
           {
             "pinType": "digital",
+            "pinID": "2",
+            "pinMode": "write",
+            "pinName": "margnet_door_1"
+          },
+          {
+            "pinType": "digital",
+            "pinID": "4",
+            "pinMode": "read",
+            "pinName": "gerkon_frog"
+          },
+          {
+            "pinType": "digital",
+            "pinID": "5",
+            "pinMode": "write",
+            "pinName": "margnet_frog"
+          },
+          {
+            "pinType": "digital",
             "pinID": "6",
-            "pinMode": "blinker",
-            "pinName": "light_1"
+            "pinMode": "rfid",
+            "pinName": "rfid_eyes"
           },
           {
             "pinType": "digital",
             "pinID": "7",
+            "pinMode": "read",
+            "pinName": "gerkon_chest"
+          },
+          {
+            "pinType": "digital",
+            "pinID": "8",
+            "pinMode": "read",
+            "pinName": "gerkon_chest_admin"
+          },
+          {
+            "pinType": "digital",
+            "pinID": "9",
             "pinMode": "write",
-            "pinName": "led_1"
+            "pinName": "megnet_chest"
+          },
+          {
+            "pinType": "digital",
+            "pinID": "10",
+            "pinMode": "write",
+            "pinName": "megnet_cehst_admin"
+          },
+          {
+            "pinType": "digital",
+            "pinID": "11",
+            "pinMode": "write",
+            "pinName": "fan_chest"
+          },
+          {
+            "pinType": "digital",
+            "pinID": "12",
+            "pinMode": "write",
+            "pinName": "led_chest"
+          },
+          {
+            "pinType": "digital",
+            "pinID": "3",
+            "pinMode": "write",
+            "pinName": "smoke_heat"
+          },
+          {
+            "pinType": "digital",
+            "pinID": "13",
+            "pinMode": "write",
+            "pinName": "smoke_on"
           }
+
         ]
       }
     ]
