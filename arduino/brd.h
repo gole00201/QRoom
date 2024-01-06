@@ -16,6 +16,7 @@ typedef uint64_t (*FP_64)(OneWire);
 #define RFID 0x0C
 #define TALK 0xFF
 #define DONT_TALK 0xDD
+#define REBOOT 0xAA
 
 /* Сообщение конфигурации пина*/
 typedef struct CFG_PIN_MSG{

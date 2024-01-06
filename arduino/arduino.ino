@@ -1,6 +1,6 @@
 #include "brd.h"
 
-void(* resetFunc) (void) = 0;
+void(* reboot) (void) = 0;
 
 void setup(){
     Serial.begin(57600);
@@ -23,12 +23,12 @@ void loop(){
             /* Обрабатываем сообщение об изменении состояния*/
             rs_get_check_msg(&msg);
             if (msg.comm != 0){
-                if(msg.comm == 0xFF){
+                if(msg.comm == TALK){
                     cntx.talk = 1;
-                } else if (msg.comm == 0xDD){
+                } else if (msg.comm == DONT_TALK){
                     cntx.talk = 0;
-                } else if (msg.comm == 0xAA){
-                    resetFunc();
+                } else if (msg.comm == REBOOT){
+                    reboot();
                 }
             } else {
                 brd_change_outs(msg, &cntx);
