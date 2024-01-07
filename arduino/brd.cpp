@@ -131,34 +131,40 @@ void rs_send_state(BRD_STATE cntx){
     Serial.write(EN_F);
 }
 
-uint16_t digital_write_action(uint8_t pin_n, uint16_t data){
-    digitalWrite(pin_n, data);
-    return data;
+uint16_t digital_write_action(PIN_STATE *pin){
+    if (pin->write_change){
+        digitalWrite(pin->cfg.pin_n, pin->write);
+        pin->write_change = false;
+    }
+    return pin->write;
 }
 
-uint16_t digital_read_action(uint8_t pin_n, uint16_t data){
-    return digitalRead(pin_n);
+uint16_t digital_read_action(PIN_STATE *pin){
+    return digitalRead(pin->cfg.pin_n);
 }
 
-uint16_t analog_read_action(uint8_t pin_n, uint16_t data){
-    return analogRead(pin_n);
+uint16_t analog_read_action(PIN_STATE *pin){
+    return analogRead(pin->cfg.pin_n);
 }
 
 
-uint16_t analog_write_action(uint8_t pin_n, uint16_t data){
-    analogWrite(pin_n, data);
-    return data;
+uint16_t analog_write_action(PIN_STATE *pin){
+    if (pin->write_change){
+        analogWrite(pin->cfg.pin_n, pin->write);
+        pin->write_change = false;
+    }
+    return pin->write;
 }
 
-uint16_t light_blink_action(uint8_t pin_n, uint16_t data){
-    if(data){
+uint16_t light_blink_action(PIN_STATE *pin){
+    if(pin->write){
         if(millis() % 10 == 0){
-            analogWrite(pin_n, (25 + random(-10, 100)));
+            analogWrite(pin->cfg.pin_n, (25 + random(-10, 100)));
         }
     } else {
-        analogWrite(pin_n, 0);
+        analogWrite(pin->cfg.pin_n, 0);
     }
-    return data;
+    return pin->write;
 }
 
 uint64_t rfid_action(OneWire rfid){
@@ -195,6 +201,7 @@ void brd_change_outs(CHANGE_MSG data, BRD_STATE* cntx){
     for (size_t i = 0; i < cntx->pins_cnt; ++i){
         if (cntx->pins[i].cfg.pin_n == data.pin_n){
             cntx->pins[i].write = data.write;
+            cntx->pins[i].write_change = true;
         }
     }
 }

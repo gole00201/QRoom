@@ -36,11 +36,11 @@ void loop(){
         }
         for (size_t i = 0; i < cntx.pins_cnt; ++i){
             /* Обновляем состояние каждого пина */
-            PIN_STATE pin = cntx.pins[i];
-            if(pin.action != NULL){
-                cntx.pins[i].read = pin.action(cntx.pins[i].cfg.pin_n, cntx.pins[i].write);
+            PIN_STATE *pin = &cntx.pins[i];
+            if(pin->action != NULL){
+                cntx.pins[i].read = pin->action(pin);
             } else {
-                cntx.pins[i].read_rfid = pin.rfid_action(cntx.pins[i].rfid);
+                cntx.pins[i].read_rfid = pin->rfid_action(cntx.pins[i].rfid);
             }
         }
         if (Serial.availableForWrite() && cntx.talk){

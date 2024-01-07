@@ -4,7 +4,8 @@
 #include <Arduino.h>
 #include <OneWire.h>
 
-typedef uint16_t (*FP)(uint8_t, uint16_t);
+typedef struct PIN_STATE PIN_STATE;
+typedef uint16_t (*FP)(PIN_STATE*);
 typedef uint64_t (*FP_64)(OneWire);
 
 #define DIGITAL 0x0D
@@ -43,14 +44,10 @@ typedef struct PIN_STATE{
     FP_64 rfid_action;
     uint16_t read;
     uint64_t read_rfid;
+    uint8_t write_change;
     uint16_t write;
 }PIN_STATE;
 
-typedef struct RFID_STATE{
-    CFG_PIN_MSG cfg;
-    FP_64 action;
-    uint64_t read;
-}RFID_STATE;
 
 /* Состояние контроллера*/
 typedef struct BRD_STATE{
@@ -107,7 +104,7 @@ void brd_cfg_pin(CFG_PIN_MSG cfg, BRD_STATE* brd, size_t i);
  * @param data данные под запись
  * @return int data
  */
-uint16_t digital_write_action(uint8_t pin_n, uint16_t data);
+uint16_t digital_write_action(PIN_STATE*);
 
 /**
  * @brief Шаблон функции цифрового чтения
@@ -116,7 +113,7 @@ uint16_t digital_write_action(uint8_t pin_n, uint16_t data);
  * @param data не валидный аргумент
  * @return uint16_t прочитанные данные
  */
-uint16_t digital_read_action(uint8_t pin_n, uint16_t data);
+uint16_t digital_read_action(PIN_STATE*);
 
 /**
  * @brief Шаблон функции аналогового чтения
@@ -125,7 +122,7 @@ uint16_t digital_read_action(uint8_t pin_n, uint16_t data);
  * @param data не валидный аргумент
  * @return int прочитанные данные
  */
-uint16_t analog_read_action(uint8_t pin_n, uint16_t data);
+uint16_t analog_read_action(PIN_STATE*);
 
 /**
  * @brief Шаблон функции аналоговой записи
@@ -134,7 +131,7 @@ uint16_t analog_read_action(uint8_t pin_n, uint16_t data);
  * @param data данные под запись
  * @return int data
  */
-uint16_t analog_write_action(uint8_t pin_n, uint16_t data);
+uint16_t analog_write_action(PIN_STATE*);
 
 /**
  * @breif Шаблон функции для случайного моргания чего-бы то нибыло
@@ -143,7 +140,7 @@ uint16_t analog_write_action(uint8_t pin_n, uint16_t data);
  * @param data не валидный аргумент
  * @return текущее установленное значение
  */
-uint16_t light_blink_action(uint8_t pin_n, uint16_t data);
+uint16_t light_blink_action(PIN_STATE*);
 
 
 /**

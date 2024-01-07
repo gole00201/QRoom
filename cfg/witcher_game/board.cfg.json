@@ -67,7 +67,7 @@
           {
             "pinType": "digital",
             "pinID": "3",
-            "pinMode": "write",
+            "pinMode": "blinker",
             "pinName": "smoke_heat"
           },
           {
